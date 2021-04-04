@@ -4,6 +4,7 @@ Using yfinance data for WTI, RBOB and HO to plot candlestick charts
 
 ## To run:
 sudo docker build -t ex_app .
+
 sudo docker run -d -p 8080:8000 ex_app
 
 Then go to:
