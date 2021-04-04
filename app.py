@@ -13,10 +13,13 @@ from dash.dependencies import Input, Output
 interval = "5m"
 period = "5d"
 cd = "CL=F"
+refresh_int = 10  # number of seconds between refreshes
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 server = flask.Flask(__name__)
+
+# n_int = 5 * 60 * 1000  # how often to update chart
 
 app = dash.Dash(__name__, server=server, external_stylesheets=external_stylesheets)
 app.config.suppress_callback_exceptions = True
@@ -26,7 +29,7 @@ app.layout = html.Div(
         dcc.Checklist(
             id="toggle-rangeslider",
             options=[{"label": "Include Rangeslider", "value": "slider"}],
-            value=[None],
+            value="slider",  # [None] to turn off by default
         ),
         dcc.Dropdown(
             id="dd_code",
@@ -56,6 +59,11 @@ app.layout = html.Div(
             value="5d",
         ),
         dcc.Graph(id="graph"),
+        dcc.Interval(
+            id="interval-component",
+            interval=refresh_int * 1000,  # in milliseconds
+            n_intervals=0,
+        ),
     ]
 )
 
@@ -67,15 +75,18 @@ app.layout = html.Div(
         Input("dd_code", "value"),
         Input("dd_int", "value"),
         Input("dd_period", "value"),
+        Input("interval-component", "n_intervals"),
     ],
 )
-def display_candlestick(value, cd, interval, period):
+def display_candlestick(value, cd, interval, period, n):
+    print(cd)
     df = yf.download(cd, period=period, interval=interval)
+    last_update = pd.Timestamp.now()
 
     if (df.shape[0] == 0) & (period == "1d"):
         fig = go.Figure()
         fig.update_layout(
-            title="Markets are closed for today, please choose 5d or greater for your period"
+            title="Markets are closed for today, please choose 5d or greater for your period",
         )
     else:
         fig = go.Figure(
@@ -93,9 +104,12 @@ def display_candlestick(value, cd, interval, period):
 
         fig.update_layout(
             xaxis_rangeslider_visible="slider" in value,
-            title=f"{cd} {interval} Intervals",
+            title=f"{cd} {interval} Intervals. Last updated {last_update}, {n} updates",
         )
 
+    fig.update_layout(
+        uirevision=f"{cd} {period} {interval}"  # makes sure that the zoom levels, etc... are not reset when data updates. List or tuple doesn't work
+    )
     return fig
 
 
