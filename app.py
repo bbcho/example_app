@@ -31,7 +31,6 @@ app.layout = html.Div(
             options=[{"label": "Include Rangeslider", "value": "slider"}],
             value="slider",  # [None] to turn off by default
         ),
-        
         dcc.Dropdown(
             id="dd_code",
             options=[
